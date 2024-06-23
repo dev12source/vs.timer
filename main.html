@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHALLENGETIMER</title>
+    <style>
+        @font-face {
+            font-family: 'GothamBold';
+            src: url('https://example.com/fonts/gotham-bold.ttf') format('truetype'); /* Ensure the correct URL to the font file */
+        }
+        
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, red, blue);
+            transition: background 1s ease;
+            font-family: 'GothamBold', sans-serif;
+        }
+
+        .timer-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 3em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #timer-display {
+            font-size: 5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        .controls button, .controls input {
+            font-size: 1.2em;
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls input {
+            width: 60px;
+            text-align: center;
+        }
+
+        .controls button {
+            background-color: #FF0000; /* Theme color */
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:hover {
+            background-color: #ff6347; /* Lighter theme color */
+        }
+
+        .controls input:focus, .controls button:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .timer-bar-container {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .timer-bar {
+            height: 100%;
+	    cursor: wait;
+            background: linear-gradient(to right, red, blue);
+            width: 100%;
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+<body>
+    <div class="timer-container">
+        <h1>versus.timer</h1>
+        <div id="timer-display">30:00</div>
+        <div class="controls">
+            <input type="number" id="hours" placeholder="HR" min="0">
+            <input type="number" id="minutes" placeholder="MIN" min="0">
+            <input type="number" id="seconds" placeholder="SEC" min="0">
+            <button id="set-time">Set Time</button>
+        </div>
+        <div class="controls">
+            <button id="start">Start</button>
+            <button id="pause">Pause</button>
+            <button id="reset">Reset</button>
+        </div>
+        <div class="timer-bar-container">
+            <div class="timer-bar" id="timer-bar"></div>
+        </div>
+    </div>
+    <script>
+        let countdown;
+        let preCountdown;
+        const timerDisplay = document.getElementById('timer-display');
+        const timerBar = document.getElementById('timer-bar');
+        const startButton = document.getElementById('start');
+        const pauseButton = document.getElementById('pause');
+        const resetButton = document.getElementById('reset');
+        const setTimeButton = document.getElementById('set-time');
+        const hoursInput = document.getElementById('hours');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+        let totalTime = 30 * 60; // 30 minutes in seconds
+        let timeRemaining = totalTime;
+        let isRunning = false;
+
+        function displayTime(seconds) {
+            if (seconds <= 0) {
+                timerDisplay.textContent = "TIME'S UP";
+            } else {
+                const minutes = Math.floor(seconds / 60);
+                const remainderSeconds = seconds % 60;
+                const display = `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
+                timerDisplay.textContent = display;
+            }
+            timerBar.style.width = `${(timeRemaining / totalTime) * 100}%`;
+        }
+
+        function timer(seconds) {
+            clearInterval(countdown);
+            const now = Date.now();
+            const then = now + seconds * 1000;
+            displayTime(seconds);
+
+            countdown = setInterval(() => {
+                if (!isRunning) return;
+                const secondsLeft = Math.round((then - Date.now()) / 1000);
+                timeRemaining = secondsLeft;
+
+                if (secondsLeft <= 0) {
+                    clearInterval(countdown);
+                    displayTime(0);
+                    timeRemaining = totalTime;
+                    isRunning = false;
+                    return;
+                }
+
+                displayTime(secondsLeft);
+            }, 1000);
+        }
+
+        function preCountdownTimer() {
+            let preTime = 3; // Pre-countdown of 3 seconds
+            timerDisplay.textContent = preTime;
+            
+            preCountdown = setInterval(() => {
+                preTime--;
+                timerDisplay.textContent = preTime;
+
+                if (preTime <= 0) {
+                    clearInterval(preCountdown);
+                    timer(timeRemaining); // Start the actual timer
+                }
+            }, 1000);
+        }
+
+        startButton.addEventListener('click', () => {
+            if (!isRunning) {
+                isRunning = true;
+                preCountdownTimer();
+            }
+        });
+
+        pauseButton.addEventListener('click', () => {
+            isRunning = false;
+            clearInterval(preCountdown); // Stop pre-countdown if running
+        });
+
+        resetButton.addEventListener('click', () => {
+            isRunning = false;
+            clearInterval(countdown);
+            clearInterval(preCountdown);
+            timeRemaining = totalTime;
+            displayTime(totalTime);
+        });
+
+        setTimeButton.addEventListener('click', () => {
+            const hours = parseInt(hoursInput.value) || 0;
+            const minutes = parseInt(minutesInput.value) || 0;
+            const seconds = parseInt(secondsInput.value) || 0;
+            totalTime = (hours * 3600) + (minutes * 60) + seconds;
+            timeRemaining = totalTime;
+            displayTime(totalTime);
+        });
+
+        // Initialize display
+        displayTime(totalTime);
+    </script>
+</body>
+</html>
